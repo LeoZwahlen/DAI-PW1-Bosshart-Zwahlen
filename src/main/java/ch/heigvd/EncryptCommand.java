@@ -2,6 +2,8 @@ package ch.heigvd;
 
 import picocli.CommandLine;
 import java.io.File; // pour les files
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.concurrent.Callable;
 
 @CommandLine.Command(
@@ -40,11 +42,18 @@ public class EncryptCommand implements Callable<Integer> {
     @Override
     public Integer call() {
 
-        System.out.println("Encrypt command launched");
-        System.out.println("Key: " + key);
-        System.out.println("Mode: " + mode);
-        System.out.println("Input: " + inputFile);
-        System.out.println("Output: " + outputFile);
+        try (FileInputStream input = new FileInputStream(inputFile)) {
+
+            byte[] buffer = new byte[1024];//créer un tableau de byte
+
+            int bytesRead;
+
+
+        } catch (IOException e) {
+
+            System.out.println("Erreur : " + e.getMessage());
+            return 1;
+        }
 
         return 0;
     }
