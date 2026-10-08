@@ -3,6 +3,7 @@ package ch.heigvd;
 import picocli.CommandLine;
 import java.io.File; // pour les files
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.concurrent.Callable;
 
@@ -42,11 +43,21 @@ public class EncryptCommand implements Callable<Integer> {
     @Override
     public Integer call() {
 
-        try (FileInputStream input = new FileInputStream(inputFile)) {
+        try (
+                FileInputStream input = new FileInputStream(inputFile);
+                FileOutputStream output = new FileOutputStream(outputFile);
+        ) {
 
             byte[] buffer = new byte[1024];//créer un tableau de byte
 
             int bytesRead;
+
+            while ((bytesRead = input.read(buffer)) != -1) {
+                System.out.println("Octets lus : " + bytesRead);
+
+                output.write(buffer, 0, bytesRead);
+
+            }
 
 
         } catch (IOException e) {
