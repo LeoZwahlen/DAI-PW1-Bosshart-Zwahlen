@@ -13,13 +13,13 @@ import java.util.concurrent.Callable;
         name = "encrypt"
 )
 
-// implements Callable<Integer> --> respect l'interface callable
+// Implements Callable<Integer> so Picocli can execute this command
 public class EncryptCommand implements Callable<Integer> {
 
-    //commande pour que picocli comprenne que --key xxxx -> key = xxxx
+    // Tells Picocli that --key xxxx should be stored in the key variable
     @CommandLine.Option(
             names = "--key",
-            required = true // utilisateur est obligé de renseigner cet argument
+            required = true // User must provide this argument
     )
     private String key;
 
@@ -41,7 +41,7 @@ public class EncryptCommand implements Callable<Integer> {
     )
     private File outputFile;
 
-    //méthode obligatoire a implémenter
+    // Required method from the Callable<Integer> interface
     @Override
     public Integer call() {
 
