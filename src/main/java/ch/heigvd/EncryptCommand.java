@@ -10,7 +10,9 @@ import java.util.concurrent.Callable;
 
 
 @CommandLine.Command(
-        name = "encrypt"
+        name = "encrypt",
+        description = "Encrypts file with GCM or CBC",
+        mixinStandardHelpOptions = true
 )
 
 // Implements Callable<Integer> so Picocli can execute this command

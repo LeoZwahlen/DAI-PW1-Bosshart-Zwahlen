@@ -1,6 +1,5 @@
 package ch.heigvd;
 
-import java.io.File;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.IOException;
@@ -18,13 +17,7 @@ import javax.crypto.spec.IvParameterSpec;
 
 public class CryptoService {
 
-    public static void encrypt(
-            InputStream input,
-            OutputStream output,
-            String key,
-            CipherMode mode
-    ) throws IOException, GeneralSecurityException {
-
+    private static SecretKeySpec toAesKey(String key) throws InvalidKeyException{
         // Convert the key String into bytes
         byte[] keyBytes = key.getBytes(StandardCharsets.UTF_8);
 
@@ -33,11 +26,21 @@ public class CryptoService {
                 keyBytes.length != 24 &&
                 keyBytes.length != 32) {
 
-            throw new InvalidKeyException("Invalid AES key length");
+            throw new InvalidKeyException("The key must be 16, 24 or 32 bytes long (got " + keyBytes.length + ")");
         }
 
         // Create an AES key object
-        SecretKeySpec secretKey = new SecretKeySpec(keyBytes, "AES");
+        return new SecretKeySpec(keyBytes, "AES");
+    }
+
+    public static void encrypt(
+            InputStream input,
+            OutputStream output,
+            String key,
+            CipherMode mode
+    ) throws IOException, GeneralSecurityException {
+
+        SecretKeySpec secretKey = toAesKey(key);
 
         if (mode == CipherMode.GCM) {
 
@@ -133,11 +136,59 @@ public class CryptoService {
     }
 
     public static void decrypt(
-            File inputFile,
-            File outputFile,
+            InputStream input,
+            OutputStream output,
             String key,
             CipherMode mode
-    ) {
-        // TODO
+    ) throws IOException, GeneralSecurityException {
+
+        int ivLength = (mode == CipherMode.GCM) ? 12 : 16;
+
+        Cipher cipher = Cipher.getInstance(mode == CipherMode.GCM ? "AES/GCM/NoPadding" : "AES/CBC/PKCS5Padding");
+
+        byte[] iv = input.readNBytes(ivLength);
+
+        if(iv.length != ivLength){
+            throw new IOException("The input file is too short to be an encrypted file");
+        }
+
+        SecretKeySpec secretKey = toAesKey(key);
+
+        if(mode == CipherMode.GCM){
+            cipher.init(
+                    Cipher.DECRYPT_MODE,
+                    secretKey,
+                    new GCMParameterSpec(128, iv)
+            );
+        } else{
+            cipher.init(
+                    Cipher.DECRYPT_MODE,
+                    secretKey,
+                    new IvParameterSpec(iv)
+            );
+        }
+
+        byte[] buffer = new byte[1024];
+        int bytesRead;
+
+        while ((bytesRead = input.read(buffer)) != -1) {
+
+            byte[] decrypted = cipher.update(
+                    buffer,
+                    0,
+                    bytesRead
+            );
+
+            if (decrypted != null) {
+                output.write(decrypted);
+            }
+        }
+
+        // Finish decryption : GCM checks the tag and CBC removes the padding
+        byte[] finalBytes = cipher.doFinal();
+
+        if (finalBytes != null) {
+            output.write(finalBytes);
+        }
     }
 }

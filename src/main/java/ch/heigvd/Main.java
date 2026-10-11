@@ -4,8 +4,10 @@ import picocli.CommandLine;
 
 @CommandLine.Command(
         name = "filecrypt",
+        description = "Encrypts and decrypts files with AES (GCM or CBC).",
         subcommands = {
-                EncryptCommand.class
+                EncryptCommand.class,
+                DecryptCommand.class
         }
 )
 public class Main {
