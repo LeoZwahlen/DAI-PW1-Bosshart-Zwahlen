@@ -1,7 +1,7 @@
 package ch.heigvd;
 
 import picocli.CommandLine;
-import java.io.File; // pour les files
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -11,7 +11,7 @@ import java.util.concurrent.Callable;
 
 @CommandLine.Command(
         name = "encrypt",
-        description = "Encrypts file with GCM or CBC",
+        description = "Encrypts file with GCM or CBC.",
         mixinStandardHelpOptions = true
 )
 
@@ -21,24 +21,28 @@ public class EncryptCommand implements Callable<Integer> {
     // Tells Picocli that --key xxxx should be stored in the key variable
     @CommandLine.Option(
             names = "--key",
+            description = "Key to encrypt with (16,24,32 characters).",
             required = true // User must provide this argument
     )
     private String key;
 
     @CommandLine.Option(
             names = "--mode",
+            description = "AES mode either GCM or CBC.",
             required = true
     )
     private CipherMode mode;
 
     @CommandLine.Option(
             names = "--input",
+            description = "File to encrypt.",
             required = true
     )
     private File inputFile;
 
     @CommandLine.Option(
             names = "--output",
+            description = "File to write encrypted stuff to.",
             required = true
     )
     private File outputFile;
@@ -61,12 +65,12 @@ public class EncryptCommand implements Callable<Integer> {
 
         } catch (IOException e) {
 
-            System.out.println("File error: " + e.getMessage());
+            System.err.println("File error: " + e.getMessage());
             return 1;
 
         } catch (GeneralSecurityException e) {
 
-            System.out.println("Encryption error: " + e.getMessage());
+            System.err.println("Encryption error: " + e.getMessage());
             return 1;
         }
 
