@@ -5,6 +5,7 @@
 .idea/jarRepositories.xml
 .idea/modules.xml
 .idea/workspace.xml
+.idea/remote-targets.xml
 *.iws
 *.iml
 *.ipr
@@ -17,6 +18,7 @@
 
 ## Maven
 target/
+dependency-reduced-pom.xml
 
 ## Windows
 Thumbs.db
