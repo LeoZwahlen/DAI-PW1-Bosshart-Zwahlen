@@ -50,15 +50,15 @@ java -jar $JAR encrypt --help
 ```
 
 ```text
-Usage: filecrypt encrypt [-hV] --input=<inputFile> --key=<key> --mode=<mode>
+Usage: filecrypt encrypt [-hV] [-m=<mode>] --input=<inputFile> --key=<key>
                          --output=<outputFile>
 Encrypts file with GCM or CBC.
-  -h, --help                Show this help message and exit.
-      --input=<inputFile>   File to encrypt.
-      --key=<key>           Key to encrypt with (16,24,32 characters).
-      --mode=<mode>         AES mode either GCM or CBC.
-      --output=<outputFile> File to write encrypted stuff to.
-  -V, --version             Print version information and exit.
+ -h, --help                Show this help message and exit.
+     --input=<inputFile>   File to encrypt.
+     --key=<key>           AES key (16, 24 or 32 bytes in UTF-8).
+ -m, --mode=<mode>         AES mode: GCM or CBC (default: GCM).
+     --output=<outputFile> File to write encrypted content to.
+ -V, --version             Print version information and exit.
 ```
 
 ```bash
@@ -66,22 +66,23 @@ java -jar $JAR decrypt --help
 ```
 
 ```text
-Usage: filecrypt decrypt [-hV] --input=<inputFile> --key=<key> --mode=<mode>
+Usage: filecrypt decrypt [-hV] [-m=<mode>] --input=<inputFile> --key=<key>
                          --output=<outputFile>
 Decrypts file that was encrypted with the encrypt command.
-  -h, --help                Show this help message and exit.
-      --input=<inputFile>   Encrypted file to read from.
-      --key=<key>           Key used for encryption (16,24,32 characters).
-      --mode=<mode>         AES mode for encryption: GCM or CBC.
-      --output=<outputFile> File to write decrypted content to.
-  -V, --version             Print version information and exit.
+ -h, --help                Show this help message and exit.
+     --input=<inputFile>   Encrypted file to read from.
+     --key=<key>           AES key (16, 24 or 32 bytes in UTF-8).
+ -m, --mode=<mode>         AES mode: GCM or CBC (default: GCM).
+     --output=<outputFile> File to write decrypted content to.
+ -V, --version             Print version information and exit.
 ```
 
 ### Encrypt
 
 ```bash
-java -jar $JAR encrypt --input examples/hello.txt --output hello.enc --mode GCM --key 0123456789abcdef
+java -jar $JAR encrypt --input examples/hello.txt --output hello.enc --key 0123456789abcdef
 ```
+GCM is used by default when `--mode` is omitted. To use CBC instead, add `--mode CBC`.
 
 Like `cp` or `mv`, the command prints nothing when it succeeds. The result is a new binary file:
 
@@ -94,14 +95,14 @@ ls -l examples/hello.txt hello.enc
 -rw-r--r-- 1 Thomas Thomas 62 Oct 12 12:50 hello.enc
 ```
 
-The encrypted file is 28 bytes larger than the original: a random 12-byte IV at the start and a 16-byte authentication tag at the end (see [File format](#file-format)).
+The encrypted file is 28 bytes larger than the original: a random 12-byte nonce at the start and a 16-byte authentication tag at the end (see [File format](#file-format)).
 
 ### Decrypt
 
-Use the same key and the same mode as for encryption. The mode is case-insensitive (`gcm` works too).
+Use the same key and the same mode as for encryption. GCM is used by default when `--mode` is omitted. For files encrypted with CBC, use `--mode CBC`. The mode is case-insensitive (`gcm` works too).
 
 ```bash
-java -jar $JAR decrypt --input hello.enc --output hello-decrypted.txt --mode GCM --key 0123456789abcdef
+java -jar $JAR decrypt --input hello.enc --output hello-decrypted.txt --key 0123456789abcdef
 cat hello-decrypted.txt
 ```
 
@@ -128,7 +129,7 @@ Errors are printed on the error output (stderr), and the tool exits with code `1
 Example with a wrong key:
 
 ```bash
-java -jar $JAR decrypt --input examples/hello-gcm.enc --output out.txt --mode GCM --key fedcba9876543210
+java -jar $JAR decrypt --input examples/hello-gcm.enc --output out.txt --key fedcba9876543210
 ```
 
 ```text
@@ -147,9 +148,9 @@ The `examples/` folder contains files to try the tool right away. Files ending i
 | `too-short.enc` | 3 bytes only: not a valid encrypted file, to see an error |
 
 ```bash
-java -jar $JAR decrypt --input examples/hello-gcm.enc --output gcm.txt --mode GCM --key 0123456789abcdef
+java -jar $JAR decrypt --input examples/hello-gcm.enc --output gcm.txt --key 0123456789abcdef
 java -jar $JAR decrypt --input examples/hello-cbc.enc --output cbc.txt --mode CBC --key 0123456789abcdef
-java -jar $JAR decrypt --input examples/too-short.enc --output x.txt --mode GCM --key 0123456789abcdef
+java -jar $JAR decrypt --input examples/too-short.enc --output x.txt --key 0123456789abcdef
 ```
 
 ## How it works
@@ -160,15 +161,15 @@ The key is given as text after `--key`. Its UTF-8 bytes are used directly as the
 
 ### File format
 
-AES needs a random initialization vector (IV) for every encryption, and decryption needs the same IV. The IV is not secret, so `encrypt` writes it at the start of the output file and `decrypt` reads it back:
+AES-GCM requires a unique nonce for every encryption, while AES-CBC requires a random initialization vector (IV). These values are not secret, so `encrypt` writes them at the start of the output file and `decrypt` reads them back.
 
 | Part | GCM | CBC |
 |---|---|---|
-| IV | 12 bytes | 16 bytes |
+| Nonce / IV | 12-byte nonce | 16-byte IV |
 | Encrypted data | same size as the input | input padded to a multiple of 16 bytes (PKCS#5) |
 | Authentication tag | 16 bytes, at the end | none |
 
-The mode is not stored in the file: the same `--mode` must be given to `decrypt`. In the hex dump of `hello.enc` above (GCM, 62 bytes), the first 12 bytes are the IV:
+The mode is not stored in the file, so decryption must use the same mode as encryption. GCM is the default and does not require `--mode`; files encrypted with CBC must be decrypted with `--mode CBC`. In the hex dump of `hello.enc` above (GCM, 62 bytes), the first 12 bytes are the nonce:
 
 ```text
 0000000 5a 2a 62 d4 e6 c9 8a 97 f4 f0 0d 4f 35 2b aa af
