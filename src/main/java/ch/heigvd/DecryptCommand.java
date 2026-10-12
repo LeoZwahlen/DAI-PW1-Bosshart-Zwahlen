@@ -28,9 +28,9 @@ public class DecryptCommand implements Callable<Integer> {
     private String key;
 
     @CommandLine.Option(
-            names = "--mode",
-            description = "AES mode for encryption: GCM or CBC.",
-            required = true
+            names = {"-m", "--mode"},
+            description = "AES mode: GCM or CBC (default: ${DEFAULT-VALUE}).",
+            defaultValue = "GCM"
     )
     private CipherMode mode;
 
